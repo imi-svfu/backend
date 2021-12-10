@@ -1,0 +1,19 @@
+# Build results
+*.pyc
+
+# Database
+migrations/
+*.sqlite3
+
+# IDE and editor settings
+.idea/
+
+# Libraries
+venv/
+
+# Environment settings
+secret_key
+settings_*.py
+
+# Static files for Django admin site
+static/
