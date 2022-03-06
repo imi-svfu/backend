@@ -16,4 +16,4 @@ secret_key
 settings_*.py
 
 # Static files for Django admin site
-static/
+/static/

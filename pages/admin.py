@@ -5,9 +5,6 @@ from markdown import markdown
 
 from .models import Page
 
-admin.AdminSite.site_header = 'ИМИ СВФУ'
-admin.AdminSite.index_title = 'Администрирование'
-
 
 @admin.register(Page)
 class AdminPage(admin.ModelAdmin):

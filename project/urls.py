@@ -17,7 +17,9 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework import routers
 
-from pages.viewsets import UserViewSet, GroupViewSet, PageViewSet
+from base import views as base_views
+from base.viewsets import UserViewSet, GroupViewSet
+from pages.viewsets import PageViewSet
 from questions.viewsets import QuestionViewSet
 
 router = routers.DefaultRouter()
@@ -27,6 +29,7 @@ router.register('pages', PageViewSet)
 router.register('questions', QuestionViewSet)
 
 urlpatterns = [
+    path('', base_views.index_page),
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),
+    path('api', include(router.urls)),
 ]

@@ -4,7 +4,7 @@ from django.db.models import (Model, CharField, TextField, DateTimeField,
 
 class Page(Model):
     """
-    Статические строницы
+    Статические страницы
     """
     title = CharField('заголовок', max_length=100)
     markdown = TextField('текст в формате Markdown', blank=True, default='')
