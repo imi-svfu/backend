@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'base.apps.BaseConfig',
     'pages.apps.PagesConfig',
     'questions.apps.QuestionsConfig',
+    'timetable.apps.TimetableConfig',
 ]
 
 MIDDLEWARE = [
