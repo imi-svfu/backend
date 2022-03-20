@@ -18,6 +18,14 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ("begin", "end", "lesson", "room", "type")
 
 
+@admin.register(models.Schedule)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ("week_day", "lesson", "type", "pair_num", "room", "repeat_option", "common")
+    fields = ("week_day", "lesson", "pair_num", "type", "room", "repeat_option", "common")
+    list_display_links = ("lesson",)
+    list_filter = ("lesson__group", "week_day", "room")
+
+
 admin.site.register(models.Group)
 admin.site.register(models.Room)
 admin.site.register(models.Subject)

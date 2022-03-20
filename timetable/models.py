@@ -17,22 +17,74 @@ class Event(models.Model):
 
 
 class Lesson(models.Model):
+
     group = models.ForeignKey('Group', verbose_name='Группа', on_delete=models.CASCADE)
     subject = models.ForeignKey('Subject', verbose_name='Дисциплина', on_delete=models.CASCADE)
     lecturer = models.ForeignKey('Lecturer', verbose_name='Преподаватель', on_delete=models.SET_NULL, null=True)
     semester = models.ForeignKey('Semester',  verbose_name='Семестр', on_delete=models.RESTRICT)
     optional = models.BooleanField(verbose_name='Выборочный', default=False)
-    week_day = models.SmallIntegerField(verbose_name="День недели")
-    repeat_option = models.SmallIntegerField(verbose_name="Параметр повторения")
-    common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
 
     def __str__(self):
-        return f"{self.subject} {self.group}"
+        return f"{self.group} {self.subject} "
 
     class Meta:
         verbose_name = "Учебное занятие"
         verbose_name_plural = "Учебные занятия"
-        ordering = ["group", "week_day"]
+        ordering = ["group", "subject"]
+
+
+class Schedule(models.Model):
+    LECTURE = 'LEC'
+    PRACTICE = 'PRA'
+    LABORATORY = 'LAB'
+
+    TYPE_CHOICES = [
+        (LECTURE, 'Лекция'),
+        (PRACTICE, 'Практика'),
+        (LABORATORY, 'Лабораторная'),
+    ]
+
+    EACH = 0
+    ODD = 1
+    EVEN = 2
+
+    REPEAT_OPTION_CHOICES = [
+        (EACH, 'Каждую неделю'),
+        (ODD, 'По нечетным'),
+        (EVEN, 'По четным')
+    ]
+
+    MON = 1
+    TUE = 2
+    WED = 3
+    THU = 4
+    FRI = 5
+    SAT = 6
+    SUN = 7
+
+    WEEK_DAY_CHOICES = [
+        (MON, 'Понедельник'),
+        (TUE, 'Вторник'),
+        (WED, 'Среда'),
+        (THU, 'Четверг'),
+        (FRI, 'Пятница'),
+        (SAT, 'Суббота'),
+        (SUN, 'Воскресенье'),
+    ]
+
+    lesson = models.ForeignKey('Lesson', verbose_name="Учебное занятие", on_delete=models.CASCADE, null=True)
+    type = models.CharField(verbose_name="Тип", max_length=3, choices=TYPE_CHOICES, default=LECTURE)
+    room = models.ForeignKey('Room', verbose_name="Кабинет", on_delete=models.CASCADE)
+    pair_num = models.SmallIntegerField(verbose_name="Номер пары")
+    week_day = models.SmallIntegerField(verbose_name="День недели", choices=WEEK_DAY_CHOICES)
+    repeat_option = models.SmallIntegerField(verbose_name="Параметр повторения", choices=REPEAT_OPTION_CHOICES,
+                                             default=EACH)
+    common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
+
+    class Meta:
+        verbose_name = "График занятия"
+        verbose_name_plural = "Графики занятий"
+        ordering = ["week_day", "pair_num"]
 
 
 class Semester(models.Model):
@@ -71,6 +123,7 @@ class Room(models.Model):
     class Meta:
         verbose_name = "Кабинет"
         verbose_name_plural = "Кабинеты"
+        ordering = ["num"]
 
 
 class Subject(models.Model):
@@ -94,3 +147,4 @@ class Lecturer(models.Model):
     class Meta:
         verbose_name = "Преподаватель"
         verbose_name_plural = "Преподаватели"
+        ordering = ["name"]
