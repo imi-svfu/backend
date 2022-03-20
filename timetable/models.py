@@ -32,6 +32,7 @@ class Lesson(models.Model):
     class Meta:
         verbose_name = "Учебное занятие"
         verbose_name_plural = "Учебные занятия"
+        ordering = ["group", "week_day"]
 
 
 class Semester(models.Model):
@@ -81,6 +82,7 @@ class Subject(models.Model):
     class Meta:
         verbose_name = "Дисциплина"
         verbose_name_plural = "Дисциплины"
+        ordering = ["name"]
 
 
 class Lecturer(models.Model):
