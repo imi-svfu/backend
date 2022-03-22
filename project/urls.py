@@ -32,4 +32,5 @@ urlpatterns = [
     path('', base_views.index_page),
     path('admin/', admin.site.urls),
     path('api', include(router.urls)),
+    path('timetable/', include('timetable.urls')),
 ]
