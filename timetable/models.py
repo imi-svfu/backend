@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models import Q
+
+from . import utils
 
 
 class Event(models.Model):
@@ -7,9 +10,35 @@ class Event(models.Model):
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, null=True)
     room = models.ForeignKey('Room', on_delete=models.CASCADE)
     type = models.CharField(verbose_name="Тип", default="Учебное занятие", max_length=255)
+    schedule = models.ForeignKey('Schedule', verbose_name="График занятий", on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return self.begin
+        return f'{self.type} {self.lesson}'
+
+    def save(self, *args, **kwargs):
+        errors = []
+        queryset_by_room = Event.objects.filter(Q(room__id=self.room.id),
+                                                Q(begin__range=(self.begin, self.end)) | Q(
+                                                    end__range=(self.begin, self.end)))
+
+        if queryset_by_room.exists():
+            errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
+
+        queryset_by_group = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
+                                                 Q(begin__range=(self.begin, self.end)) | Q(
+                                                     end__range=(self.begin, self.end)))
+        if queryset_by_group.exists() and self.lesson.group.num != "Дистанционно":
+            errors.append("Данная группа в это время занята")
+
+        queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
+                                                    Q(begin__range=(self.begin, self.end)) | Q(
+                                                        end__range=(self.begin, self.end)))
+        if queryset_by_lecturer.exists():
+            errors.append("Преподаватель в это время есть другое занятие")
+
+        if errors:
+            raise Exception(errors)
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Событие"
@@ -17,11 +46,10 @@ class Event(models.Model):
 
 
 class Lesson(models.Model):
-
     group = models.ForeignKey('Group', verbose_name='Группа', on_delete=models.CASCADE)
     subject = models.ForeignKey('Subject', verbose_name='Дисциплина', on_delete=models.CASCADE)
     lecturer = models.ForeignKey('Lecturer', verbose_name='Преподаватель', on_delete=models.SET_NULL, null=True)
-    semester = models.ForeignKey('Semester',  verbose_name='Семестр', on_delete=models.RESTRICT)
+    semester = models.ForeignKey('Semester', verbose_name='Семестр', on_delete=models.RESTRICT)
     optional = models.BooleanField(verbose_name='Выборочный', default=False)
 
     def __str__(self):
@@ -81,10 +109,20 @@ class Schedule(models.Model):
                                              default=EACH)
     common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
 
+    def __str__(self):
+        return f"{self.lesson} {self.week_day} {self.pair_num} {self.repeat_option}"
+
+    def save(self, *args, **kwargs):
+        try:
+            utils.generate_events(self)
+            super().save(*args, **kwargs)
+        except Exception as e:
+            raise e
+
     class Meta:
         verbose_name = "График занятия"
         verbose_name_plural = "Графики занятий"
-        ordering = ["week_day", "pair_num"]
+        # ordering = ["week_day", "pair_num"]
 
 
 class Semester(models.Model):
