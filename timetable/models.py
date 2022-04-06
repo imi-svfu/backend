@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models import Q
+
+from . import utils
 
 
 class Event(models.Model):
@@ -7,9 +10,35 @@ class Event(models.Model):
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, null=True)
     room = models.ForeignKey('Room', on_delete=models.CASCADE)
     type = models.CharField(verbose_name="Тип", default="Учебное занятие", max_length=255)
+    schedule = models.ForeignKey('Schedule', verbose_name="График занятий", on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return self.begin
+        return f'{self.type} {self.lesson}'
+
+    def save(self, *args, **kwargs):
+        errors = []
+        queryset_by_room = Event.objects.filter(Q(room__id=self.room.id),
+                                                Q(begin__range=(self.begin, self.end)) | Q(
+                                                    end__range=(self.begin, self.end)))
+
+        if queryset_by_room.exists():
+            errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
+
+        queryset_by_group = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
+                                                 Q(begin__range=(self.begin, self.end)) | Q(
+                                                     end__range=(self.begin, self.end)))
+        if queryset_by_group.exists() and self.lesson.group.num != "Дистанционно":
+            errors.append("Данная группа в это время занята")
+
+        queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
+                                                    Q(begin__range=(self.begin, self.end)) | Q(
+                                                        end__range=(self.begin, self.end)))
+        if queryset_by_lecturer.exists():
+            errors.append("Преподаватель в это время есть другое занятие")
+
+        if errors:
+            raise Exception(errors)
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Событие"
@@ -20,18 +49,80 @@ class Lesson(models.Model):
     group = models.ForeignKey('Group', verbose_name='Группа', on_delete=models.CASCADE)
     subject = models.ForeignKey('Subject', verbose_name='Дисциплина', on_delete=models.CASCADE)
     lecturer = models.ForeignKey('Lecturer', verbose_name='Преподаватель', on_delete=models.SET_NULL, null=True)
-    semester = models.ForeignKey('Semester',  verbose_name='Семестр', on_delete=models.RESTRICT)
+    semester = models.ForeignKey('Semester', verbose_name='Семестр', on_delete=models.RESTRICT)
     optional = models.BooleanField(verbose_name='Выборочный', default=False)
-    week_day = models.SmallIntegerField(verbose_name="День недели")
-    repeat_option = models.SmallIntegerField(verbose_name="Параметр повторения")
-    common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
 
     def __str__(self):
-        return f"{self.subject} {self.group}"
+        return f"{self.group} {self.subject} "
 
     class Meta:
         verbose_name = "Учебное занятие"
         verbose_name_plural = "Учебные занятия"
+        ordering = ["group", "subject"]
+
+
+class Schedule(models.Model):
+    LECTURE = 'LEC'
+    PRACTICE = 'PRA'
+    LABORATORY = 'LAB'
+
+    TYPE_CHOICES = [
+        (LECTURE, 'Лекция'),
+        (PRACTICE, 'Практика'),
+        (LABORATORY, 'Лабораторная'),
+    ]
+
+    EACH = 0
+    ODD = 1
+    EVEN = 2
+
+    REPEAT_OPTION_CHOICES = [
+        (EACH, 'Каждую неделю'),
+        (ODD, 'По нечетным'),
+        (EVEN, 'По четным')
+    ]
+
+    MON = 1
+    TUE = 2
+    WED = 3
+    THU = 4
+    FRI = 5
+    SAT = 6
+    SUN = 7
+
+    WEEK_DAY_CHOICES = [
+        (MON, 'Понедельник'),
+        (TUE, 'Вторник'),
+        (WED, 'Среда'),
+        (THU, 'Четверг'),
+        (FRI, 'Пятница'),
+        (SAT, 'Суббота'),
+        (SUN, 'Воскресенье'),
+    ]
+
+    lesson = models.ForeignKey('Lesson', verbose_name="Учебное занятие", on_delete=models.CASCADE, null=True)
+    type = models.CharField(verbose_name="Тип", max_length=3, choices=TYPE_CHOICES, default=LECTURE)
+    room = models.ForeignKey('Room', verbose_name="Кабинет", on_delete=models.CASCADE)
+    pair_num = models.SmallIntegerField(verbose_name="Номер пары")
+    week_day = models.SmallIntegerField(verbose_name="День недели", choices=WEEK_DAY_CHOICES)
+    repeat_option = models.SmallIntegerField(verbose_name="Параметр повторения", choices=REPEAT_OPTION_CHOICES,
+                                             default=EACH)
+    common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
+
+    def __str__(self):
+        return f"{self.lesson} {self.week_day} {self.pair_num} {self.repeat_option}"
+
+    def save(self, *args, **kwargs):
+        try:
+            utils.generate_events(self)
+            super().save(*args, **kwargs)
+        except Exception as e:
+            raise e
+
+    class Meta:
+        verbose_name = "График занятия"
+        verbose_name_plural = "Графики занятий"
+        # ordering = ["week_day", "pair_num"]
 
 
 class Semester(models.Model):
@@ -70,6 +161,7 @@ class Room(models.Model):
     class Meta:
         verbose_name = "Кабинет"
         verbose_name_plural = "Кабинеты"
+        ordering = ["num"]
 
 
 class Subject(models.Model):
@@ -81,6 +173,7 @@ class Subject(models.Model):
     class Meta:
         verbose_name = "Дисциплина"
         verbose_name_plural = "Дисциплины"
+        ordering = ["name"]
 
 
 class Lecturer(models.Model):
@@ -92,3 +185,4 @@ class Lecturer(models.Model):
     class Meta:
         verbose_name = "Преподаватель"
         verbose_name_plural = "Преподаватели"
+        ordering = ["name"]
