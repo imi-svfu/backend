@@ -140,5 +140,6 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     '^http://localhost:[0-9]+$',
+    '^http://127.0.0.1:[0-9]+$',
     '^https://(www\\.)?kit-imi\\.info$',
 ]
