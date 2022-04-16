@@ -11,7 +11,8 @@ def generate_events(schedule):
     semester_end = models.Lesson.objects.get(pk=lesson_id).semester.study_end
 
     """Заполнение event"""
-    startpoint_date = datetime.date.today()
+    # startpoint_date = datetime.date.today()
+    startpoint_date = semester_begin - datetime.timedelta(days=1)
     if startpoint_date < semester_begin:
         startpoint_date = semester_begin
     if startpoint_date.isoweekday() > schedule.week_day:
@@ -96,3 +97,7 @@ def get_week_events(viewset, request):
         return Response({'error': 'Неверный параметр {\'get_by\'} запроса'})
     serializer = viewset.get_serializer(events, many=True)
     return Response(serializer.data)
+
+
+    def schedules_by_group(viewset, request):
+        pass
