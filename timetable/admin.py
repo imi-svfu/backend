@@ -29,6 +29,5 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 admin.site.register(models.Group)
 admin.site.register(models.Room)
-admin.site.register(models.Subject)
 admin.site.register(models.Lecturer)
 

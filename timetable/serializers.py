@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Schedule, Event, Lesson, Semester, Subject, Group, Lecturer, Room
+from .models import Schedule, Event, Lesson, Semester, Group, Lecturer, Room
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -14,21 +14,15 @@ class SemesterSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ScheduleSerializer(serializers.ModelSerializer):
+class LecturerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Schedule
-        fields = '__all__'
-
-
-class SubjectSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subject
+        model = Lecturer
         fields = '__all__'
 
 
 class LessonSerializer(serializers.ModelSerializer):
     group = GroupSerializer()
-    subject = SubjectSerializer()
+    lecturer = LecturerSerializer()
     class Meta:
         model = Lesson
         fields = '__all__'
@@ -40,15 +34,17 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ScheduleSerializer(serializers.ModelSerializer):
+    lesson = LessonSerializer()
+    room = RoomSerializer()
+    class Meta:
+        model = Schedule
+        fields = '__all__'
+
+
 class EventSerializer(serializers.ModelSerializer):
     lesson = LessonSerializer()
     room = RoomSerializer()
     class Meta:
         model = Event
-        fields = '__all__'
-
-
-class LecturerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lecturer
         fields = '__all__'

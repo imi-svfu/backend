@@ -47,10 +47,13 @@ class Event(models.Model):
 
 class Lesson(models.Model):
     group = models.ForeignKey('Group', verbose_name='Группа', on_delete=models.CASCADE)
-    subject = models.ForeignKey('Subject', verbose_name='Дисциплина', on_delete=models.CASCADE)
+    subject = models.CharField(verbose_name='Дисциплина', max_length=255)
     lecturer = models.ForeignKey('Lecturer', verbose_name='Преподаватель', on_delete=models.SET_NULL, null=True)
     semester = models.ForeignKey('Semester', verbose_name='Семестр', on_delete=models.RESTRICT)
     optional = models.BooleanField(verbose_name='Выборочный', default=False)
+    lectures = models.SmallIntegerField(verbose_name='Часы лекционных заянятий', null=True)
+    practices = models.SmallIntegerField(verbose_name='Часы практических', null=True)
+    labs = models.SmallIntegerField(verbose_name='Часы лабораторных занятий', null=True)
 
     def __str__(self):
         return f"{self.group} {self.subject} "
@@ -162,18 +165,6 @@ class Room(models.Model):
         verbose_name = "Кабинет"
         verbose_name_plural = "Кабинеты"
         ordering = ["num"]
-
-
-class Subject(models.Model):
-    name = models.CharField(verbose_name="Название", max_length=255)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "Дисциплина"
-        verbose_name_plural = "Дисциплины"
-        ordering = ["name"]
 
 
 class Lecturer(models.Model):
