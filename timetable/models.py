@@ -117,8 +117,8 @@ class Schedule(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            utils.generate_events(self)
             super().save(*args, **kwargs)
+            utils.generate_events(self)
         except Exception as e:
             raise e
 
