@@ -16,7 +16,8 @@ class ScheduleViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def group(self, request):
-        schedules = Schedule.objects.all()
+        group = request.GET['id']
+        schedules = Schedule.objects.filter(lesson__group__id=group)
         serializer = self.get_serializer(schedules, many=True)
         return Response(serializer.data)
 

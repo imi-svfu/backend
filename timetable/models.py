@@ -27,7 +27,7 @@ class Event(models.Model):
         queryset_by_group = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
                                                  Q(begin__range=(self.begin, self.end)) | Q(
                                                      end__range=(self.begin, self.end)))
-        if queryset_by_group.exists() and self.lesson.group.num != "Дистанционно":
+        if queryset_by_group.exists():
             errors.append("Данная группа в это время занята")
 
         queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
@@ -51,9 +51,9 @@ class Lesson(models.Model):
     lecturer = models.ForeignKey('Lecturer', verbose_name='Преподаватель', on_delete=models.SET_NULL, null=True)
     semester = models.ForeignKey('Semester', verbose_name='Семестр', on_delete=models.RESTRICT)
     optional = models.BooleanField(verbose_name='Выборочный', default=False)
-    lectures = models.SmallIntegerField(verbose_name='Часы лекционных заянятий', null=True)
-    practices = models.SmallIntegerField(verbose_name='Часы практических', null=True)
-    labs = models.SmallIntegerField(verbose_name='Часы лабораторных занятий', null=True)
+    lectures = models.SmallIntegerField(verbose_name='Часы лекционных заянятий', null=True, blank=True)
+    practices = models.SmallIntegerField(verbose_name='Часы практических', null=True, blank=True)
+    labs = models.SmallIntegerField(verbose_name='Часы лабораторных занятий', null=True, blank=True)
 
     def __str__(self):
         return f"{self.group} {self.subject} "
