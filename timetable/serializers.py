@@ -35,8 +35,8 @@ class RoomSerializer(serializers.ModelSerializer):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    lesson = LessonSerializer()
-    room = RoomSerializer()
+    lesson = LessonSerializer(read_only=True)
+    room = RoomSerializer(read_only=True)
     class Meta:
         model = Schedule
         fields = '__all__'

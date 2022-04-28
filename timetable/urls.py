@@ -4,7 +4,7 @@ from .viewsets import ScheduleViewSet, LessonViewSet, EventViewSet, GroupViewSet
 
 router = DefaultRouter()
 router.register(r'schedules', ScheduleViewSet)
-router.register(r'lessons', LessonViewSet)
+router.register(r'lessons', LessonViewSet, 'lesson-list')
 router.register(r'events', EventViewSet)
 router.register(r'groups', GroupViewSet)
 router.register(r'lecturers', LecturerViewSet)

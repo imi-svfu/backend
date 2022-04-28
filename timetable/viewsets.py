@@ -1,6 +1,8 @@
+from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+import datetime
 
 from .models import Schedule, Lesson, Event, Group, Lecturer, Room
 from rest_framework.viewsets import ModelViewSet
@@ -14,6 +16,11 @@ class ScheduleViewSet(ModelViewSet):
     serializer_class = ScheduleSerializer
     permission_classes = [BasePermission]
 
+    def perform_create(self, serializer):
+        print(self.request.data['room'])
+        serializer.save (room=Room.objects.get(pk=self.request.data['room']),
+                         lesson=Lesson.objects.get(pk=self.request.data['lesson']))
+
     @action(detail=False, methods=['get'])
     def group(self, request):
         group = request.GET['id']
@@ -23,9 +30,15 @@ class ScheduleViewSet(ModelViewSet):
 
 
 class LessonViewSet(ModelViewSet):
-    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [BasePermission]
+
+    def get_queryset(self):
+        queryset = Lesson.objects.all()
+        group = self.request.query_params.get('group')
+        if group is not None:
+            queryset = Lesson.objects.filter(group__id=group)
+        return queryset
 
 
 class EventViewSet(ModelViewSet):
@@ -55,3 +68,14 @@ class RoomViewSet(ModelViewSet):
     queryset = Room.objects.order_by('num')
     serializer_class = RoomSerializer
     permission_classes = [BasePermission]
+
+    @action(detail=False, methods=['get'])
+    def get_available(self, request):
+        group_id = request.query_params.get('group_id')
+        week_day = int(request.query_params.get('week_day'))
+        pair_num = int(request.query_params.get('pair_num'))
+
+        rooms = utils.get_available_rooms(group_id, week_day, pair_num)
+        serializer = self.get_serializer(rooms, many=True)
+        return Response(serializer.data)
+
