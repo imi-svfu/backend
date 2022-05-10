@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         plan = get_plan(options['filename'][0])
         """Номер семестра заполняемых занятий"""
-        sem = 8
+        sem = 6
         group_name = options['groupname'][0]
         try :
             group_id = Group.objects.get(name=group_name).id
@@ -23,13 +23,17 @@ class Command(BaseCommand):
         semester_id = Semester.objects.get(Q(group_id=group_id) & Q(num=sem)).id
         subjects = plan.subject_codes
         for subject in subjects.items():
+            optional = False
+            if ".ДВ." in subject[1].code:
+                optional = True
             if sem in subject[1].semesters:
                 lesson = Lesson(group_id=group_id,
                                 subject=subject[1].name,
                                 semester_id=semester_id,
                                 lectures=subject[1].semesters[sem].lectures,
                                 practices=subject[1].semesters[sem].practices,
-                                labs=subject[1].semesters[sem].labworks
+                                labs=subject[1].semesters[sem].labworks,
+                                optional=optional
                                 )
                 lesson.save()
 
