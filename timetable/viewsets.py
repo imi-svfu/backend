@@ -21,12 +21,17 @@ class ScheduleViewSet(ModelViewSet):
         serializer.save (room=Room.objects.get(pk=self.request.data['room']),
                          lesson=Lesson.objects.get(pk=self.request.data['lesson']))
 
+    def perform_update(self, serializer):
+        serializer.save(room=Room.objects.get(pk=self.request.data['room']),
+                        lesson=Lesson.objects.get(pk=self.request.data['lesson']))
+
     @action(detail=False, methods=['get'])
     def group(self, request):
         group = request.GET['id']
         schedules = Schedule.objects.filter(lesson__group__id=group)
         serializer = self.get_serializer(schedules, many=True)
         return Response(serializer.data)
+
 
 
 class LessonViewSet(ModelViewSet):
@@ -39,6 +44,28 @@ class LessonViewSet(ModelViewSet):
         if group is not None:
             queryset = Lesson.objects.filter(group__id=group)
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def hours(self, request):
+        group = request.GET['group_id']
+        hours = []
+        lessons = Lesson.objects.filter(group__id=group)
+        for lesson in lessons:
+            lec_events = Event.objects.filter(schedule__lesson=lesson, schedule__type='LEC')
+            pra_events = Event.objects.filter(schedule__lesson=lesson, schedule__type='PRA')
+            lab_events = Event.objects.filter(schedule__lesson=lesson, schedule__type='LAB')
+            lec_events_count = lec_events.count()
+            pra_events_count = pra_events.count()
+            lab_events_count = lab_events.count()
+            hours.append({
+                'lesson_id': lesson.id,
+                'lec': lec_events_count * 2,
+                'pra': pra_events_count * 2,
+                'lab': lab_events_count * 2
+            })
+            print(lesson)
+        print(hours)
+        return Response(hours)
 
 
 class EventViewSet(ModelViewSet):
@@ -74,8 +101,9 @@ class RoomViewSet(ModelViewSet):
         group_id = request.query_params.get('group_id')
         week_day = int(request.query_params.get('week_day'))
         pair_num = int(request.query_params.get('pair_num'))
+        repeat_option = int(request.query_params.get('repeat_option'))
 
-        rooms = utils.get_available_rooms(group_id, week_day, pair_num)
+        rooms = utils.get_available_rooms(group_id, week_day, pair_num, repeat_option)
         serializer = self.get_serializer(rooms, many=True)
         return Response(serializer.data)
 
