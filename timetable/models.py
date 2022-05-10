@@ -27,14 +27,15 @@ class Event(models.Model):
         queryset_by_group = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
                                                  Q(begin__range=(self.begin, self.end)) | Q(
                                                      end__range=(self.begin, self.end)))
-        if queryset_by_group.exists():
+        if queryset_by_group.exists() and self.schedule.type != 'LAB' and self.schedule.lesson.optional :
             errors.append("Данная группа в это время занята")
 
-        queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
-                                                    Q(begin__range=(self.begin, self.end)) | Q(
-                                                        end__range=(self.begin, self.end)))
-        if queryset_by_lecturer.exists():
-            errors.append("Преподаватель в это время есть другое занятие")
+        if (self.lesson.subject != "Элективные дисциплины по физической культуре и спорту"):
+            queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
+                                                        Q(begin__range=(self.begin, self.end)) | Q(
+                                                            end__range=(self.begin, self.end)))
+            if queryset_by_lecturer.exists():
+                errors.append("Преподаватель в это время есть другое занятие")
 
         if errors:
             raise Exception(errors)
