@@ -51,7 +51,8 @@ def generate_events(schedule):
     else:
         step = 1
 
-    related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=datetime.datetime.now())
+    #related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=datetime.datetime.now())
+    related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=startpoint_date)
     if related_events.exists():
         related_events.delete()
 
@@ -164,7 +165,7 @@ def get_pairs_begin_end(pair_num):
     return result
 
 
-def get_available_rooms(group_id, week_day, pair_num):
+def get_available_rooms(group_id, week_day, pair_num, repeat_option):
     rooms = models.Room.objects.all()
 
     event_date = get_event_date_and_weeks_count(group_id, week_day)['start_event_date']
@@ -173,7 +174,16 @@ def get_available_rooms(group_id, week_day, pair_num):
     pairtime_begin, pairtime_end = get_pairs_begin_end(pair_num)['begin'], get_pairs_begin_end(pair_num)[
         'end']
 
-    for i in range(0, weeks_count):
+    if repeat_option == 0:
+        step = 1
+    else:
+        step = 2
+
+    if (repeat_option == 1 and event_date.isocalendar().week % 2 == 0) or \
+            (repeat_option == 2 and event_date.isocalendar().week % 2 == 1):
+        event_date += datetime.timedelta(days=7)
+
+    for i in range(0, weeks_count, step):
         begin = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i), pairtime_begin)
         end = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i), pairtime_end)
 
