@@ -1,14 +1,12 @@
-from django.db.models import Q
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
-import datetime
-
-from .models import Schedule, Lesson, Event, Group, Lecturer, Room
-from rest_framework.viewsets import ModelViewSet
-from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, RoomSerializer
 from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+
 from . import utils
+from .models import Schedule, Lesson, Event, Group, Lecturer, Room
+from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, \
+    RoomSerializer
 
 
 class ScheduleViewSet(ModelViewSet):
@@ -18,8 +16,8 @@ class ScheduleViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         print(self.request.data['room'])
-        serializer.save (room=Room.objects.get(pk=self.request.data['room']),
-                         lesson=Lesson.objects.get(pk=self.request.data['lesson']))
+        serializer.save(room=Room.objects.get(pk=self.request.data['room']),
+                        lesson=Lesson.objects.get(pk=self.request.data['lesson']))
 
     def perform_update(self, serializer):
         serializer.save(room=Room.objects.get(pk=self.request.data['room']),
@@ -27,11 +25,13 @@ class ScheduleViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def group(self, request):
-        group = request.GET['id']
-        schedules = Schedule.objects.filter(lesson__group__id=group)
+        try:
+            group = request.GET['id']
+            schedules = Schedule.objects.filter(lesson__group__id=group)
+        except (KeyError, ValueError):
+            return Response([])
         serializer = self.get_serializer(schedules, many=True)
         return Response(serializer.data)
-
 
 
 class LessonViewSet(ModelViewSet):
@@ -47,9 +47,13 @@ class LessonViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def hours(self, request):
-        group = request.GET['group_id']
         hours = []
-        lessons = Lesson.objects.filter(group__id=group)
+        try:
+            group = request.GET['group_id']
+            lessons = Lesson.objects.filter(group__id=group)
+        except (KeyError, ValueError):
+            return Response(hours)
+
         for lesson in lessons:
             lec_events = Event.objects.filter(schedule__lesson=lesson, schedule__type='LEC')
             pra_events = Event.objects.filter(schedule__lesson=lesson, schedule__type='PRA')
@@ -75,7 +79,7 @@ class EventViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_week_events(self, request):
-        print(request.GET['get_by'])
+        print(request.GET.get('get_by'))
         return utils.get_week_events(self, request)
 
 
@@ -106,4 +110,3 @@ class RoomViewSet(ModelViewSet):
         rooms = utils.get_available_rooms(group_id, week_day, pair_num, repeat_option)
         serializer = self.get_serializer(rooms, many=True)
         return Response(serializer.data)
-

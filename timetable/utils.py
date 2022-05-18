@@ -51,7 +51,7 @@ def generate_events(schedule):
     else:
         step = 1
 
-    #related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=datetime.datetime.now())
+    # related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=datetime.datetime.now())
     related_events = models.Event.objects.filter(schedule=schedule.id).filter(begin__gt=startpoint_date)
     if related_events.exists():
         related_events.delete()
@@ -72,6 +72,9 @@ def generate_events(schedule):
 def get_week_events(viewset, request):
     start_date = request.GET['start_date']
     end_date = request.GET['end_date']
+
+    if 'get_by' not in request.GET:
+        return Response([])
 
     if request.GET['get_by'] == 'group':
         group_id = request.GET['param_id']
@@ -103,22 +106,16 @@ def get_week_events(viewset, request):
     return Response(serializer.data)
 
 
-    def schedules_by_group(viewset, request):
-        pass
-
-
-""" 
-    На выход дает:
-                    - event_date - стартовую дату event-а 
-                    - weeks_count - количество недель в семестре
-"""
 def get_event_date_and_weeks_count(group_id, week_day):
-
-    result = dict();
+    """
+        На выход дает:
+                        - event_date - стартовую дату event-а
+                        - weeks_count - количество недель в семестре
+    """
+    result = dict()
 
     semester_begin = models.Semester.objects.get(group_id=group_id).study_start
     semester_end = models.Semester.objects.get(group_id=group_id).study_end
-
 
     startpoint_date = semester_begin - datetime.timedelta(days=1)
 
@@ -188,8 +185,8 @@ def get_available_rooms(group_id, week_day, pair_num, repeat_option):
         end = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i), pairtime_end)
 
         events = models.Event.objects.filter(Q(begin__range=(begin, end))
-                                      |
-                                      Q(end__range=(begin, end)))
+                                             |
+                                             Q(end__range=(begin, end)))
         rooms = rooms.exclude(event__in=events)
 
     return rooms
