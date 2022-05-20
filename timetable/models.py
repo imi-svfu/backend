@@ -1,5 +1,7 @@
 from django.db import models
 from django.db.models import Q
+from requests import Response
+from rest_framework import status
 
 from . import utils
 
@@ -13,22 +15,36 @@ class Event(models.Model):
     schedule = models.ForeignKey('Schedule', verbose_name="График занятий", on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return f'{self.type} {self.lesson}'
+        event_str = f'{self.type} {self.lesson}'
+        if (self.schedule.subgroup) :
+            event_str += f' (1/{self.lesson.group.subgroups})'
+        return event_str
 
     def save(self, *args, **kwargs):
         errors = []
-        queryset_by_room = Event.objects.filter(Q(room__id=self.room.id),
-                                                Q(begin__range=(self.begin, self.end)) | Q(
-                                                    end__range=(self.begin, self.end)))
+        if self.room.num != "Дист":
+            queryset_by_room = Event.objects.filter(Q(room__id=self.room.id),
+                                                    Q(begin__range=(self.begin, self.end)) | Q(
+                                                        end__range=(self.begin, self.end)))
 
-        if queryset_by_room.exists():
-            errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
+            if queryset_by_room.exists():
+                errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
 
-        queryset_by_group = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
+        group_events_for_current_range = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
                                                  Q(begin__range=(self.begin, self.end)) | Q(
                                                      end__range=(self.begin, self.end)))
-        if queryset_by_group.exists() and self.schedule.type != 'LAB' and self.schedule.lesson.optional :
+        subgroup_event = group_events_for_current_range.filter(schedule__subgroup=True)
+
+        if (group_events_for_current_range.exists()
+                and not subgroup_event.exists()
+        ) :
             errors.append("Данная группа в это время занята")
+
+        if (self.schedule.subgroup and (subgroup_event.count() >= int(self.lesson.group.subgroups))):
+            errors.append("Все подгруппы заняты")
+
+        if (not self.schedule.subgroup and subgroup_event.exists()):
+            errors.append("В данное время есть занятия по подгруппам")
 
         if (self.lesson.subject != "Элективные дисциплины по физической культуре и спорту"):
             queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
@@ -112,9 +128,14 @@ class Schedule(models.Model):
     repeat_option = models.SmallIntegerField(verbose_name="Параметр повторения", choices=REPEAT_OPTION_CHOICES,
                                              default=EACH)
     common = models.BooleanField(verbose_name="Потоковое занятие", default=False)
+    subgroup = models.BooleanField(verbose_name="Подгруппа", default=False)
 
     def __str__(self):
-        return f"{self.lesson} {self.week_day} {self.pair_num} {self.repeat_option}"
+        subgroups = ""
+        if (self.subgroup) :
+            subgroups = f'(1/{self.lesson.group.subgroups})'
+        sched_str = f"{self.lesson} {subgroups} {self.week_day} {self.pair_num} {self.repeat_option}"
+        return sched_str
 
     def save(self, *args, **kwargs):
         try:
@@ -147,6 +168,7 @@ class Semester(models.Model):
 
 class Group(models.Model):
     name = models.CharField(verbose_name="Название группы", max_length=255)
+    subgroups = models.SmallIntegerField(verbose_name="Количество подгрупп", null=True, blank=True)
 
     def __str__(self):
         return self.name
