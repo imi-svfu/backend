@@ -199,14 +199,13 @@ def get_available_rooms(group_id, week_day, pair_num, repeat_option):
     return rooms
 
 
-def schedule_to_excel(group_course):
+def schedule_to_excel(group_id):
 
     app_dir = os.path.dirname(os.path.abspath(__file__))
     template = os.path.join(app_dir, 'schedule.xlsx')
     workbook = load_workbook(template)
     ws = workbook.active
 
-    groups = models.Group.objects.filter(name=)
     group = models.Group.objects.get(pk=group_id)
     semester = models.Semester.objects.get(group__id=group_id)
 
@@ -222,8 +221,14 @@ def schedule_to_excel(group_course):
         2: "**",
     }
 
+    schedule_types = {
+        "LEC": "Лек",
+        "PRA": "Пр",
+        "LAB": "Лаб",
+    }
+
     def fill_cell(column, j, content):
-        return  ((str(ws[column + j].value) + "\n ") if ws[column + j].value != None else "") \
+        return  ((str(ws[column + j].value) + "\n") if ws[column + j].value != None else "") \
         + content
 
     wrap_text = Alignment(horizontal="center",
@@ -262,7 +267,7 @@ def schedule_to_excel(group_course):
         )
         ws['D' + j] = fill_cell('D', j, short_lecturer_name)
 
-        ws['E' + j] = fill_cell('E', j, schedule.type)
+        ws['E' + j] = fill_cell('E', j, schedule_types[schedule.type])
         ws['F' + j] = fill_cell('F', j, schedule.room.num)
 
-    workbook.save("test.xlsx")
+    workbook.save("imi_schedule.xlsx")
