@@ -1,10 +1,14 @@
 import datetime
+import os
 
 from django.db.models import Q
 
 from . import models
 from rest_framework.response import Response
 from rest_framework import status
+
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment, Font
 
 
 def generate_events(schedule):
@@ -56,16 +60,19 @@ def generate_events(schedule):
     if related_events.exists():
         related_events.delete()
 
+    if schedule.subgroup and schedule.lesson.group.subgroups == None:
+        raise Exception("У группы не заданы количество подгрупп")
+
     for i in range(0, weeks_count, step):
-        """ Сначала заполнить пустой event, потом заполнить через точки """
-        event = models.Event(begin=datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i),
-                                                             pairtime_begin[schedule.pair_num]),
-                             end=datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i),
-                                                           pairtime_end[schedule.pair_num]),
-                             lesson=schedule.lesson,
-                             room=schedule.room,
-                             type=schedule.type,
-                             schedule=schedule)
+        event = models.Event()
+        event.begin = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i),
+                                                pairtime_begin[schedule.pair_num])
+        event.end = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i),
+                                                           pairtime_end[schedule.pair_num])
+        event.lesson = schedule.lesson
+        event.room = schedule.room
+        event.type = schedule.type
+        event.schedule = schedule
         event.save()
 
 
@@ -190,3 +197,72 @@ def get_available_rooms(group_id, week_day, pair_num, repeat_option):
         rooms = rooms.exclude(event__in=events)
 
     return rooms
+
+
+def schedule_to_excel(group_course):
+
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    template = os.path.join(app_dir, 'schedule.xlsx')
+    workbook = load_workbook(template)
+    ws = workbook.active
+
+    groups = models.Group.objects.filter(name=)
+    group = models.Group.objects.get(pk=group_id)
+    semester = models.Semester.objects.get(group__id=group_id)
+
+    ws['C4'] = group.name
+    ws['E4'] = semester.study_start
+    ws['F4'] = semester.study_end
+
+    schedules = models.Schedule.objects.filter(lesson__group__id=group_id).order_by("week_day", "pair_num")
+
+    star = {
+        0: "",
+        1: "*",
+        2: "**",
+    }
+
+    def fill_cell(column, j, content):
+        return  ((str(ws[column + j].value) + "\n ") if ws[column + j].value != None else "") \
+        + content
+
+    wrap_text = Alignment(horizontal="center",
+                            vertical="center",
+                            text_rotation=0,
+                            wrap_text=True,
+                            shrink_to_fit=False,
+                            indent=0)
+
+    for i in range(6, 42):
+        ws['C' + str(i)].alignment = wrap_text
+        ws['C' + str(i)].font = Font(name="Times New Roman", size=14)
+
+        ws['D' + str(i)].alignment = wrap_text
+        ws['D' + str(i)].font = Font(name="Times New Roman", size=14)
+
+        ws['E' + str(i)].alignment = wrap_text
+        ws['E' + str(i)].font = Font(name="Times New Roman", size=14)
+
+        ws['F' + str(i)].alignment = wrap_text
+        ws['F' + str(i)].font = Font(name="Times New Roman", size=14)
+
+
+
+    for schedule in schedules:
+        k = str((schedule.week_day - 1) * 6 + 6)
+        j = str(int(k) + schedule.pair_num - 1)
+        ws['C' + j] = fill_cell('C', j, schedule.lesson.subject) + star[schedule.repeat_option] + \
+                      (f"(1/{schedule.lesson.group.subgroups})" if schedule.subgroup else "")
+
+        n = schedule.lesson.lecturer.name
+        short_lecturer_name = u'{} {}. {}.'.format(
+            n[:n.find(' ')],
+            n[n.find(' ') + 1],
+            n[n.rfind(' ') + 1]
+        )
+        ws['D' + j] = fill_cell('D', j, short_lecturer_name)
+
+        ws['E' + j] = fill_cell('E', j, schedule.type)
+        ws['F' + j] = fill_cell('F', j, schedule.room.num)
+
+    workbook.save("test.xlsx")
