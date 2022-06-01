@@ -143,3 +143,6 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     '^http://127.0.0.1:[0-9]+$',
     '^https://(www\\.)?kit-imi\\.info$',
 ]
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000/'
+]

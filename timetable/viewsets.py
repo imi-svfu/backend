@@ -37,7 +37,7 @@ class ScheduleViewSet(ModelViewSet):
     @action(detail=False, methods=['get'])
     def exportgroup(self, request):
         group = self.request.query_params.get('group')
-        utils.schedule_to_excel(group)
+        utils.schedule_to_excel()
         return Response({'data': 'Таблица сформирована'}, status.HTTP_200_OK)
 
 
