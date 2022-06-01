@@ -3,7 +3,7 @@ from django.db.models import Q
 from requests import Response
 from rest_framework import status
 
-from . import utils
+from timetable import utils
 
 
 class Event(models.Model):
@@ -28,7 +28,9 @@ class Event(models.Model):
                                                         end__range=(self.begin, self.end)))
 
             if queryset_by_room.exists():
-                errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
+                sched_common = queryset_by_room[0].schedule.common
+                if sched_common == 0 or (sched_common == 1 and self.schedule.common == 0):
+                    errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
 
         group_events_for_current_range = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
                                                  Q(begin__range=(self.begin, self.end)) | Q(
@@ -50,8 +52,11 @@ class Event(models.Model):
             queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
                                                         Q(begin__range=(self.begin, self.end)) | Q(
                                                             end__range=(self.begin, self.end)))
+
             if queryset_by_lecturer.exists():
-                errors.append("Преподаватель в это время есть другое занятие")
+                if queryset_by_lecturer[0].room != self.room:
+                    errors.append(f"У преподавателя в это время есть занятие в другом кабинете - "
+                                  f"{queryset_by_lecturer[0].room}")
 
         if errors:
             raise Exception(errors)

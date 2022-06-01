@@ -1,14 +1,26 @@
+from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
+from rest_framework.views import exception_handler
 from rest_framework.viewsets import ModelViewSet
+from rest_framework import status
 
 from . import utils
 from .models import Schedule, Lesson, Event, Group, Lecturer, Room
 from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, \
     RoomSerializer
 
+def custom_exception_handler(exc, context):
+    # Call REST framework's default exception handler first,
+    # to get the standard error response.
+    response = exception_handler(exc, context)
+
+    if response is None:
+        response = Response({'message': exc.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+    return response
 
 class ScheduleViewSet(ModelViewSet):
     queryset = Schedule.objects.all()
@@ -16,9 +28,10 @@ class ScheduleViewSet(ModelViewSet):
     permission_classes = [BasePermission]
 
     def perform_create(self, serializer):
-        print(self.request.data['room'])
-        serializer.save(room=Room.objects.get(pk=self.request.data['room']),
-                        lesson=Lesson.objects.get(pk=self.request.data['lesson']))
+        with transaction.atomic():
+            serializer.save(room=Room.objects.get(pk=self.request.data['room']),
+                            lesson=Lesson.objects.get(pk=self.request.data['lesson']))
+            transaction.set_rollback(True)
 
     def perform_update(self, serializer):
         serializer.save(room=Room.objects.get(pk=self.request.data['room']),

@@ -192,9 +192,11 @@ def get_available_rooms(group_id, week_day, pair_num, repeat_option):
         begin = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i), pairtime_begin)
         end = datetime.datetime.combine(event_date + datetime.timedelta(days=7 * i), pairtime_end)
 
-        events = models.Event.objects.filter(Q(begin__range=(begin, end))
-                                             |
-                                             Q(end__range=(begin, end)))
+        events = models.Event.objects.filter(Q(schedule__common=0),
+                                             Q(begin__range=(begin, end)) | Q(end__range=(begin, end)))
+
+        events = events.exclude(room__num="Дист")
+
         rooms = rooms.exclude(event__in=events)
 
     return rooms
