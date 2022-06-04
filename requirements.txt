@@ -1,4 +1,11 @@
-django
+django~=4.0
 django-cors-headers
-djangorestframework
-markdown
+djangorestframework~=3.13.0
+markdown~=3.3.6
+
+openpyxl~=3.0.9
+requests~=2.27.1
+PyYAML~=6.0
+bs4~=0.0.1
+beautifulsoup4~=4.11.1
+docxtpl~=0.16.0
