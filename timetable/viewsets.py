@@ -1,5 +1,4 @@
 from django.db import transaction
-from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
@@ -7,10 +6,11 @@ from rest_framework.views import exception_handler
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
-from . import utils
+from .utils import schedule_to_excel, events, available_rooms
 from .models import Schedule, Lesson, Event, Group, Lecturer, Room
 from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, \
     RoomSerializer
+
 
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
@@ -21,6 +21,7 @@ def custom_exception_handler(exc, context):
         response = Response({'message': exc.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
     return response
+
 
 class ScheduleViewSet(ModelViewSet):
     queryset = Schedule.objects.all()
@@ -48,9 +49,10 @@ class ScheduleViewSet(ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
-    def exportgroup(self, request):
-        group = self.request.query_params.get('group')
-        utils.schedule_to_excel()
+    def exportgroup(self):
+        # group = self.request.query_params.get('group')
+        # utils.schedule_to_excel()
+        schedule_to_excel.export()
         return Response({'data': 'Таблица сформирована'}, status.HTTP_200_OK)
 
 
@@ -100,7 +102,7 @@ class EventViewSet(ModelViewSet):
     @action(detail=False, methods=['get'])
     def get_week_events(self, request):
         print(request.GET.get('get_by'))
-        return utils.get_week_events(self, request)
+        return events.get_week_events(self, request)
 
 
 class GroupViewSet(ModelViewSet):
@@ -127,6 +129,6 @@ class RoomViewSet(ModelViewSet):
         pair_num = int(request.query_params.get('pair_num'))
         repeat_option = int(request.query_params.get('repeat_option'))
 
-        rooms = utils.get_available_rooms(group_id, week_day, pair_num, repeat_option)
+        rooms = available_rooms.get(group_id, week_day, pair_num, repeat_option)
         serializer = self.get_serializer(rooms, many=True)
         return Response(serializer.data)

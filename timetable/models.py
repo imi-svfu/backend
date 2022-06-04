@@ -1,9 +1,7 @@
 from django.db import models
 from django.db.models import Q
-from requests import Response
-from rest_framework import status
 
-from timetable import utils
+from .utils import events
 
 
 class Event(models.Model):
@@ -16,7 +14,7 @@ class Event(models.Model):
 
     def __str__(self):
         event_str = f'{self.type} {self.lesson}'
-        if (self.schedule.subgroup) :
+        if self.schedule.subgroup:
             event_str += f' (1/{self.lesson.group.subgroups})'
         return event_str
 
@@ -33,22 +31,20 @@ class Event(models.Model):
                     errors.append(f"Данная аудитория в это время занята, идет событие {queryset_by_room[0]}")
 
         group_events_for_current_range = Event.objects.filter(Q(lesson__group__id=self.lesson.group.id),
-                                                 Q(begin__range=(self.begin, self.end)) | Q(
-                                                     end__range=(self.begin, self.end)))
+                                                              Q(begin__range=(self.begin, self.end)) | Q(
+                                                                  end__range=(self.begin, self.end)))
         subgroup_event = group_events_for_current_range.filter(schedule__subgroup=True)
 
-        if (group_events_for_current_range.exists()
-                and not subgroup_event.exists()
-        ) :
+        if group_events_for_current_range.exists() and not subgroup_event.exists():
             errors.append("Данная группа в это время занята")
 
-        if (self.schedule.subgroup and (subgroup_event.count() >= int(self.lesson.group.subgroups))):
+        if self.schedule.subgroup and (subgroup_event.count() >= int(self.lesson.group.subgroups)):
             errors.append("Все подгруппы заняты")
 
-        if (not self.schedule.subgroup and subgroup_event.exists()):
+        if not self.schedule.subgroup and subgroup_event.exists():
             errors.append("В данное время есть занятия по подгруппам")
 
-        if (self.lesson.subject != "Элективные дисциплины по физической культуре и спорту"):
+        if self.lesson.subject != "Элективные дисциплины по физической культуре и спорту":
             queryset_by_lecturer = Event.objects.filter(Q(lesson__lecturer__id=self.lesson.lecturer.id),
                                                         Q(begin__range=(self.begin, self.end)) | Q(
                                                             end__range=(self.begin, self.end)))
@@ -137,7 +133,7 @@ class Schedule(models.Model):
 
     def __str__(self):
         subgroups = ""
-        if (self.subgroup) :
+        if self.subgroup:
             subgroups = f'(1/{self.lesson.group.subgroups})'
         sched_str = f"{self.lesson} {subgroups} {self.week_day} {self.pair_num} {self.repeat_option}"
         return sched_str
@@ -145,7 +141,7 @@ class Schedule(models.Model):
     def save(self, *args, **kwargs):
         try:
             super().save(*args, **kwargs)
-            utils.generate_events(self)
+            events.generate(self)
         except Exception as e:
             raise e
 
