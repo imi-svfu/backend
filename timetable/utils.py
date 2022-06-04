@@ -247,34 +247,6 @@ def schedule_to_excel():
 
         current_col_start = int(3 + (c - 1) * 4)
 
-        top_range = ws[get_column_letter(current_col_start) + "3" : get_column_letter(current_col_start + 3) + "3"]
-        bottom_range = ws[get_column_letter(current_col_start) + "41" : get_column_letter(current_col_start + 3) + "41"]
-        left_range = ws[get_column_letter(current_col_start) + "3" : get_column_letter(current_col_start) + "41"]
-        right_range = ws[get_column_letter(current_col_start + 3) + "3" : get_column_letter(current_col_start + 3) + "41"]
-
-
-        rrange = ws[get_column_letter(current_col_start) + "3" : get_column_letter(current_col_start + 3) + "41"]
-
-        black_medium_side = Side(border_style="medium", color="000000")
-
-        for row in top_range:
-            for cell in row:
-                cell.border = Border(**(cell.border.__dict__ | {'top': black_medium_side}))
-
-        for row in bottom_range:
-            for cell in row:
-                cell.border = Border(**(cell.border.__dict__ | {'bottom': black_medium_side}))
-
-        for row in left_range:
-            for cell in row:
-                cell.border = Border(
-                    **(cell.border.__dict__ | {'left': black_medium_side}))
-
-        for row in right_range:
-            for cell in row:
-                cell.border = Border(**(cell.border.__dict__ | {'right': black_medium_side}))
-
-
         ws.column_dimensions[get_column_letter(current_col_start)].width = 35
         ws.column_dimensions[get_column_letter(current_col_start + 1)].width = 19
         ws.column_dimensions[get_column_letter(current_col_start + 2)].width = 14
@@ -327,6 +299,14 @@ def schedule_to_excel():
 
         schedules = models.Schedule.objects.filter(lesson__group__id=group.id).order_by("week_day", "pair_num")
 
+        """
+            Заливает границы
+        """
+        for i in range(groups.count() - 1):
+            for row in ws[get_column_letter(3 + 4 * i) + '3':get_column_letter(6 + 4 * i) + '41']:
+                for cell in row:
+                    dist_cell = ws.cell(column=cell.column + 4, row=cell.row)
+                    dist_cell.border = Border(**(dist_cell.border.__dict__ | cell.border.__dict__))
 
         def fill_cell(column, j, content):
             return  ((str(ws.cell(column=column, row=j).value) + "\n")
@@ -348,8 +328,6 @@ def schedule_to_excel():
             roomcell = ws.cell(column=current_col_start + 3, row=i) # room cell
             roomcell.alignment = wrap_text
             roomcell.font = default_font
-
-
 
         for schedule in schedules:
             k = (schedule.week_day - 1) * 6 + 6 # week day start row
