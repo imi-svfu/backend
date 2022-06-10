@@ -49,7 +49,7 @@ class ScheduleViewSet(ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
-    def exportgroup(self):
+    def exportgroup(self, request):
         # group = self.request.query_params.get('group')
         # utils.schedule_to_excel()
         schedule_to_excel.export()
