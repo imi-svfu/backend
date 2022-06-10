@@ -6,7 +6,7 @@ from rest_framework.views import exception_handler
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
-from .utils import schedule_to_excel, events, available_rooms
+from .utils import schedule_to_excel, events, available_rooms, export_to_ical
 from .models import Schedule, Lesson, Event, Group, Lecturer, Room
 from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, \
     RoomSerializer
@@ -50,8 +50,6 @@ class ScheduleViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def exportgroup(self, request):
-        # group = self.request.query_params.get('group')
-        # utils.schedule_to_excel()
         schedule_to_excel.export()
         return Response({'data': 'Таблица сформирована'}, status.HTTP_200_OK)
 
@@ -103,6 +101,12 @@ class EventViewSet(ModelViewSet):
     def get_week_events(self, request):
         print(request.GET.get('get_by'))
         return events.get_week_events(self, request)
+
+    @action(detail=False, methods=['get'])
+    def export_ical(self, request):
+        export_to_ical.export(request)
+        return Response({'data': 'Файл сформирован'}, status.HTTP_200_OK)
+
 
 
 class GroupViewSet(ModelViewSet):
