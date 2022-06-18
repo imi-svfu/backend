@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework.decorators import action
+from rest_framework.parsers import BaseParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
@@ -21,6 +22,19 @@ def custom_exception_handler(exc, context):
         response = Response({'message': exc.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
     return response
+
+
+class ICalParser(BaseParser):
+    """
+    Plain text parser.
+    """
+    media_type = 'text/calendar'
+
+    def parse(self, stream, media_type=None, parser_context=None):
+        """
+        Simply return a string representing the body of the request.
+        """
+        return stream.read()
 
 
 class ScheduleViewSet(ModelViewSet):
@@ -102,10 +116,21 @@ class EventViewSet(ModelViewSet):
         print(request.GET.get('get_by'))
         return events.get_week_events(self, request)
 
-    @action(detail=False, methods=['get'])
-    def export_ical(self, request):
-        export_to_ical.export(request)
-        return Response({'data': 'Файл сформирован'}, status.HTTP_200_OK)
+
+class EventViewSet2(ModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    permission_classes = [BasePermission]
+    parser_classes = [ICalParser]
+
+    def list(self, request, *args, **kwargs):
+        cal = export_to_ical.export(request)
+        return Response(cal.to_ical(), status=status.HTTP_200_OK)
+        # return Response({"msg": "dsadas"})
+
+    # @action(detail=False, methods=['get'])
+    # def export_ical(self, request):
+
 
 
 

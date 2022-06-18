@@ -34,7 +34,8 @@ def export(request):
         ical_event.add('uid', event.id)
         cal.add_component(ical_event)
 
-    dir = Path(__file__).resolve().parent.parent.parent
-    f = open(os.path.join(dir, 'schedule.ics'), 'wb')
-    f.write(cal.to_ical())
-    f.close()
+    return cal
+    # dir = Path(__file__).resolve().parent.parent.parent
+    # f = open(os.path.join(dir, 'schedule.ics'), 'wb')
+    # f.write(cal.to_ical())
+    # f.close()
