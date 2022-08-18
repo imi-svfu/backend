@@ -132,8 +132,6 @@ class EventViewSet2(ModelViewSet):
     # def export_ical(self, request):
 
 
-
-
 class GroupViewSet(ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer

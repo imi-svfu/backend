@@ -1,36 +1,32 @@
-"""project URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework import routers
 
 from base import views as base_views
-from base.viewsets import UserViewSet, GroupViewSet
+from base.viewsets import UserViewSet, GroupViewSet as UserGroupViewSet
 from pages.viewsets import PageViewSet
 from questions.viewsets import QuestionViewSet
+from timetable.viewsets import (
+    ScheduleViewSet, LessonViewSet, EventViewSet, EventViewSet2, GroupViewSet,
+    LecturerViewSet, RoomViewSet
+)
 
 router = routers.DefaultRouter()
 router.register('users', UserViewSet)
-router.register('groups', GroupViewSet)
+router.register('groups', UserGroupViewSet)
 router.register('pages', PageViewSet)
 router.register('questions', QuestionViewSet)
+router.register('schedules', ScheduleViewSet)
+router.register('lessons', LessonViewSet, 'lesson-list')
+router.register('events', EventViewSet)
+router.register('ical', EventViewSet2)
+router.register('groups', GroupViewSet)
+router.register('lecturers', LecturerViewSet)
+router.register('rooms', RoomViewSet)
 
 urlpatterns = [
     path('', base_views.index_page),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api/timetable/', include('timetable.urls')),
+    path('timetable/', include('timetable.urls')),
 ]
