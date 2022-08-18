@@ -1,6 +1,56 @@
-{% extends 'base/page.html' %}
-{% block main %}
-<div>Новости</div>
-<div>Мероприятия</div>
-<div>Посты</div>
-{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="shortcut icon" href="{% static 'base/favicon.ico' %}"/>
+    <link rel="stylesheet" href="{% static 'base/page.css' %}"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"/>
+</head>
+<body>
+<header>
+    <div>
+        <div>Логотип</div>
+        <div>ИНСТИТУТ МАТЕМАТИКИ И ИНФОРМАТИКИ</div>
+    </div>
+    <div>
+        <div>Личный кабинет</div>
+        <div>Контакты</div>
+        <div>Телефон</div>
+        <div>Кнопки</div>
+    </div>
+</header>
+<header>
+    <nav>
+        <a href="#">ИНСТИТУТ</a>
+        <a href="#">АБИТУРЕНТАМ</a>
+        <a href="#">СТУДЕНТАМ</a>
+        <a href="#">ВЫПУСКНИКАМ</a>
+        <a href="#">РАБОТНИКАМ</a>
+        <a href="#">ПОС ИМИ</a>
+        <a href="#">ТРУДОУСТРОЙСТВО</a>
+    </nav>
+</header>
+<header>
+    <img src="{% static 'base/header1.jpg' %}" alt=""/>
+</header>
+<main>
+    <div>Новости</div>
+    <div>Мероприятия</div>
+    <div>Посты</div>
+</main>
+<footer>
+    <div>
+        <p>г. Якутск, ул. Кулаковского, д. 48</p>
+        <p>+7(4112)49-68-34</p>
+    </div>
+    <div></div>
+    <div>2022 Институт математики и информатики</div>
+</footer>
+</body>
+</html>
