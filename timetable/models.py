@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
+
 from django.contrib import admin
 from django.db.models import (
     BooleanField, CASCADE, CharField, DateField, DateTimeField, ForeignKey,
     Model, Q, RESTRICT, SET_NULL, SmallIntegerField
 )
 
-from .utils import events
+from .utils.pairs_begin_end import pairtime_begin, pairtime_end
 
 
 class Event(Model):
@@ -109,6 +111,58 @@ class Lesson(Model):
         ordering = ['group', 'subject']
 
 
+def generate(schedule):
+    """ Заполнение event """
+    semester = schedule.lesson.semester
+    study_begin = semester.study_start
+    study_end = semester.study_end
+
+    startpoint_date = study_begin
+    if startpoint_date.isoweekday() > schedule.week_day:
+        days1 = timedelta(days=(7 - startpoint_date.isoweekday()))
+        days2 = timedelta(days=schedule.week_day)
+        event_date = startpoint_date + days1 + days2
+    else:
+        days3 = timedelta(days=(schedule.week_day - startpoint_date.isoweekday()))
+        event_date = startpoint_date + days3
+
+    weeks_count = (study_end - event_date).days // 7 + 1
+
+    step = 2
+    if schedule.repeat_option == 1:  # нечетные недели
+        if event_date.isocalendar().week % 2 == 0:
+            event_date += timedelta(days=7)
+    elif schedule.repeat_option == 2:  # четные недели
+        if event_date.isocalendar().week % 2 == 1:
+            event_date += timedelta(days=7)
+    else:
+        step = 1  # каждая неделя
+
+    # related_events = Event.objects\
+    #     .filter(schedule=schedule.id)\
+    #     .filter(begin__gt=datetime.now())
+    related_events = Event.objects\
+        .filter(schedule=schedule.id)\
+        .filter(begin__gt=startpoint_date)
+    if related_events.exists():
+        related_events.delete()
+
+    if schedule.subgroup and schedule.lesson.group.subgroups is None:
+        raise Exception("У группы не заданы количество подгрупп")
+
+    for i in range(0, weeks_count, step):
+        event = Event()
+        event.begin = datetime.combine(event_date + timedelta(days=7 * i),
+                                       pairtime_begin[schedule.pair_num])
+        event.end = datetime.combine(event_date + timedelta(days=7 * i),
+                                     pairtime_end[schedule.pair_num])
+        event.lesson = schedule.lesson
+        event.room = schedule.room
+        event.type = schedule.type
+        event.schedule = schedule
+        event.save()
+
+
 LECTURE = 'LEC'
 PRACTICE = 'PRA'
 LABORATORY = 'LAB'
@@ -175,7 +229,7 @@ class Schedule(Model):
     def save(self, *args, **kwargs):
         try:
             super().save(*args, **kwargs)
-            events.generate(self)
+            generate(self)
         except Exception as e:
             raise e
 

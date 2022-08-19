@@ -1,7 +1,6 @@
-from icalendar import Calendar, Event as ical_event_class
 from datetime import datetime
-import os
-from pathlib import Path
+
+from icalendar import Calendar, Event as ical_event_class
 
 from timetable import models
 
@@ -10,6 +9,7 @@ schedule_types = {
     "PRA": "Пр",
     "LAB": "Лаб",
 }
+
 
 def export(request):
     group_id = request.GET.get('group_id')

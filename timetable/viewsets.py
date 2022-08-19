@@ -11,7 +11,6 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
 from .utils import schedule_to_excel, export_to_ical
-from .utils.events import get_week_events as events_get_week_events
 from .utils.pairs_begin_end import pairtime_begin, pairtime_end
 from .models import Event, Group, Lecturer, Lesson, Room, Schedule, Semester
 from .serializers import (ScheduleSerializer, LessonSerializer, EventSerializer,
@@ -109,6 +108,48 @@ class LessonViewSet(ModelViewSet):
             print(lesson)
         print(hours)
         return Response(hours)
+
+
+def events_get_week_events(request):
+    start_date = request.GET['start_date']
+    end_date = request.GET['end_date']
+
+    if 'get_by' not in request.GET:
+        return Response([])
+
+    try:
+        if request.GET['get_by'] == 'group':
+            group_id = request.GET['param_id']
+            events = Event.objects.filter(
+                lesson__group__id=group_id,
+                begin__range=(start_date, end_date)
+            )
+            if not events.exists():
+                raise NotImplementedError()
+
+        elif request.GET['get_by'] == 'lecturer':
+            lecturer_id = request.GET['param_id']
+            events = Event.objects.filter(
+                lesson__lecturer__id=lecturer_id,
+                begin__range=(start_date, end_date)
+            )
+            if not events.exists():
+                raise NotImplementedError()
+
+        elif request.GET['get_by'] == 'room':
+            room_id = request.GET['param_id']
+            events = Event.objects.filter(
+                room__id__iexact=room_id,
+                begin__range=(start_date, end_date)
+            )
+            if not events.exists():
+                raise NotImplementedError()
+
+    except NotImplementedError as e:
+        msg = 'Нет занятий либо такого преподавателя не существует'
+        return Response({'error': msg}, status.HTTP_404_NOT_FOUND)
+
+    return Response({'error': 'Неверный параметр {\'get_by\'} запроса'})
 
 
 class EventViewSet(ModelViewSet):
