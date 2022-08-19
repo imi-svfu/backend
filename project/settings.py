@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'base.apps.BaseConfig',
     'pages.apps.PagesConfig',
-    'questions.apps.QuestionsConfig',
     'timetable.apps.TimetableConfig',
 ]
 
