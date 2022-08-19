@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'base.apps.BaseConfig',
-    'pages.apps.PagesConfig',
     'timetable.apps.TimetableConfig',
 ]
 

@@ -3,8 +3,8 @@ from django.urls import include, path
 from rest_framework import routers
 
 from base import views as base_views
-from base.viewsets import UserViewSet, GroupViewSet as UserGroupViewSet
-from pages.viewsets import PageViewSet, QuestionViewSet
+from base.viewsets import (UserViewSet, GroupViewSet as UserGroupViewSet,
+                           PageViewSet, QuestionViewSet)
 from timetable.viewsets import (
     ScheduleViewSet, LessonViewSet, EventViewSet, EventViewSet2, GroupViewSet,
     LecturerViewSet, RoomViewSet
