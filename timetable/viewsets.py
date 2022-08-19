@@ -1,4 +1,7 @@
+from datetime import datetime, timedelta
+
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework.parsers import BaseParser
 from rest_framework.permissions import BasePermission
@@ -7,10 +10,12 @@ from rest_framework.views import exception_handler
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
-from .utils import schedule_to_excel, events, available_rooms, export_to_ical
-from .models import Schedule, Lesson, Event, Group, Lecturer, Room
-from .serializers import ScheduleSerializer, LessonSerializer, EventSerializer, GroupSerializer, LecturerSerializer, \
-    RoomSerializer
+from .utils import schedule_to_excel, export_to_ical
+from .utils.events import get_week_events as events_get_week_events
+from .utils.pairs_begin_end import pairtime_begin, pairtime_end
+from .models import Event, Group, Lecturer, Lesson, Room, Schedule, Semester
+from .serializers import (ScheduleSerializer, LessonSerializer, EventSerializer,
+                          GroupSerializer, LecturerSerializer, RoomSerializer)
 
 
 def custom_exception_handler(exc, context):
@@ -114,7 +119,7 @@ class EventViewSet(ModelViewSet):
     @action(detail=False, methods=['get'])
     def get_week_events(self, request):
         print(request.GET.get('get_by'))
-        return events.get_week_events(self, request)
+        return events_get_week_events(request)
 
 
 class EventViewSet2(ModelViewSet):
@@ -144,6 +149,61 @@ class LecturerViewSet(ModelViewSet):
     permission_classes = [BasePermission]
 
 
+def get_event_date_and_weeks_count(group_id, week_day):
+    """ На выход дает:
+    - event_date - стартовую дату event-а
+    - weeks_count - количество недель в семестре
+    """
+    semester = Semester.objects.get(group_id=group_id)
+    semester_begin = semester.study_start
+    semester_end = semester.study_end
+
+    startpoint_date = semester_begin - timedelta(days=1)
+    if startpoint_date < semester_begin:
+        startpoint_date = semester_begin
+
+    if startpoint_date.isoweekday() > week_day:
+        days = 7 - startpoint_date.isoweekday()
+        event_date = startpoint_date + \
+            timedelta(days=days) + \
+            timedelta(days=week_day)
+    else:
+        event_date = startpoint_date + timedelta(
+            days=(week_day - startpoint_date.isoweekday()))
+
+    weeks_count = (semester_end - event_date).days // 7 + 1
+    return event_date, weeks_count
+
+
+def available_rooms(group_id, week_day, pair_num, repeat_option):
+    rooms = Room.objects.all()
+
+    event_date, weeks_count = get_event_date_and_weeks_count(group_id, week_day)
+
+    if repeat_option == 0:
+        step = 1
+    else:
+        step = 2
+
+    week_num = event_date.isocalendar().week
+    if (repeat_option == 1 and week_num % 2 == 0) or \
+            (repeat_option == 2 and week_num % 2 == 1):
+        event_date += timedelta(days=7)
+
+    for i in range(0, weeks_count, step):
+        base_date = event_date + timedelta(days=7 * i)
+        begin = datetime.combine(base_date, pairtime_begin[pair_num])
+        end = datetime.combine(base_date, pairtime_end[pair_num])
+        events = Event.objects.filter(
+            Q(schedule__common=0),
+            Q(begin__range=(begin, end)) | Q(end__range=(begin, end))
+        )
+        events = events.exclude(room__num="Дист")
+        rooms = rooms.exclude(event__in=events)
+
+    return rooms
+
+
 class RoomViewSet(ModelViewSet):
     queryset = Room.objects.order_by('num')
     serializer_class = RoomSerializer
@@ -156,6 +216,6 @@ class RoomViewSet(ModelViewSet):
         pair_num = int(request.query_params.get('pair_num'))
         repeat_option = int(request.query_params.get('repeat_option'))
 
-        rooms = available_rooms.get(group_id, week_day, pair_num, repeat_option)
+        rooms = available_rooms(group_id, week_day, pair_num, repeat_option)
         serializer = self.get_serializer(rooms, many=True)
         return Response(serializer.data)
